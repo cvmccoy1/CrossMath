@@ -32,7 +32,7 @@ Every row and column in the grid is an equation. Drag the number tiles into the 
 
 ## Running it
 
-Requires Windows and the [.NET 9 SDK](https://dotnet.microsoft.com/download).
+Requires Windows and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```sh
 dotnet run --project src/CrossMath.App

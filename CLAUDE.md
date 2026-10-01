@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-CrossMath: a crossword-style math puzzle game. C# / .NET 9, WPF, MVVM. See README.md for the game rules and the generation algorithm.
+CrossMath: a crossword-style math puzzle game. C# / .NET 10, WPF, MVVM. See README.md for the game rules and the generation algorithm.
 
 ## Commands
 
@@ -13,13 +13,13 @@ dotnet run --project src/CrossMath.App
 
 ## Architecture
 
-- `src/CrossMath.Core` (net9.0) — pure engine, no UI dependencies.
+- `src/CrossMath.Core` (net10.0) — pure engine, no UI dependencies.
   - `Model.cs` — `Pos`, `Equation` (2 or 3 operands; cells laid out `N op N = N` / `N op N op N = N`), `Puzzle`.
   - `Evaluator` — the single source of truth for equation math. Used by the filler, the solver and the app's Check/win logic.
   - `LayoutGenerator` → `Filler` → `PuzzleGenerator.SelectBlanks` (uses `Solver.CountSolutions`) → `Puzzle`.
   - `DifficultySettings.For(...)` holds all per-difficulty tuning.
-- `src/CrossMath.App` (net9.0-windows, WPF) — MVVM with CommunityToolkit.Mvvm; composition root in `App.xaml.cs`.
-- `tests/CrossMath.Core.Tests` (net9.0) and `tests/CrossMath.App.Tests` (net9.0-windows, references the App project).
+- `src/CrossMath.App` (net10.0-windows, WPF) — MVVM with CommunityToolkit.Mvvm; composition root in `App.xaml.cs`.
+- `tests/CrossMath.Core.Tests` (net10.0) and `tests/CrossMath.App.Tests` (net10.0-windows, references the App project).
 
 ## Rules to preserve
 
