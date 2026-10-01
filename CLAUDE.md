@@ -5,7 +5,7 @@ CrossMath: a crossword-style math puzzle game. C# / .NET 10, WPF, MVVM. See READ
 ## Commands
 
 ```sh
-dotnet build CrossMath.sln            # must stay at 0 warnings
+dotnet build CrossMath.slnx           # must stay at 0 warnings
 dotnet test                           # all tests; generator tests take ~10 s
 dotnet test tests/CrossMath.Core.Tests
 dotnet run --project src/CrossMath.App

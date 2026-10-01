@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CrossMath.App/CrossMath.App.csproj" />
+    <Project Path="src/CrossMath.Core/CrossMath.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CrossMath.App.Tests/CrossMath.App.Tests.csproj" />
+    <Project Path="tests/CrossMath.Core.Tests/CrossMath.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="global.json" />
+    <File Path="README.md" />
+    <File Path="CLAUDE.md" />
+  </Folder>
+</Solution>
