@@ -7,9 +7,12 @@ CrossMath: a crossword-style math puzzle game. C# / .NET 10, WPF, MVVM. See READ
 ```sh
 dotnet build CrossMath.slnx           # must stay at 0 warnings
 dotnet test                           # all tests; generator tests take ~10 s
-dotnet test tests/CrossMath.Core.Tests
+dotnet test --project tests/CrossMath.Core.Tests
+dotnet test --coverage --coverage-output-format cobertura   # report lands in TestResults/ (ignored)
 dotnet run --project src/CrossMath.App
 ```
+
+Tests use **xUnit v3** on **Microsoft Testing Platform** (opted in via `"test": { "runner": ... }` in `global.json`). Test projects are executables (`<OutputType>Exe</OutputType>`), so `tests/*/bin/Debug/<tfm>/*.Tests.exe` can also be run directly. `dotnet test` takes `--project`, not a bare path. Don't re-add `Microsoft.NET.Test.Sdk`, `xunit.runner.visualstudio` or `coverlet.collector`. They are VSTest-only, and the .NET 10 SDK rejects VSTest runs for MTP projects.
 
 ## Architecture
 
