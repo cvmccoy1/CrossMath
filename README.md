@@ -12,8 +12,10 @@ Every row and column in the grid is an equation. Drag the number tiles into the 
 - Or **click** a tile, then click a square. **Right-click** a placed tile to send it back to the pool.
 - **Check** colors the squares of every completed equation green (correct) or red (wrong).
 - **Hint** places one correct tile and locks it.
+- The clock starts with your first move (or hint).
 - **Undo** (or **Ctrl+Z**) takes back the last move or hint, one step at a time, back to the start of the game. An undone hint still counts toward your hint total.
 - **Reset** clears the board. **New Game** or a difficulty change generates a fresh puzzle.
+- The window's size, position and maximized state, and the difficulty, are remembered between runs (in `%LOCALAPPDATA%\CrossMath\settings.json`).
 
 ### Rules
 

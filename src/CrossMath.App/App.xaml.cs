@@ -19,6 +19,7 @@ public partial class App : Application
         _services = new ServiceCollection()
             .AddSingleton<IPuzzleGenerator>(_ => new PuzzleGenerator())
             .AddSingleton<ITimerService, DispatcherTimerService>()
+            .AddSingleton<ISettingsService>(_ => new JsonSettingsService(JsonSettingsService.DefaultPath))
             .AddSingleton<MainViewModel>()
             .AddSingleton<MainWindow>()
             .BuildServiceProvider();

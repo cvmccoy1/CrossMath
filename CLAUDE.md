@@ -36,7 +36,7 @@ Tests use **xUnit v3** on **Microsoft Testing Platform** (opted in via `"test": 
 
 - Code-behind contains only `InitializeComponent()`. UI behavior goes through bindings, commands, attached behaviors (`Behaviors/`) and converters (`Converters/`).
 - View models never reference WPF UI types (`Brush`, `Visibility`, controls, `Dispatcher`). Expose enums/bools and convert in XAML.
-- Services are interfaces injected via the constructor (`IPuzzleGenerator`, `ITimerService`) so view models are testable with fakes. Register new services in `App.xaml.cs`.
+- Services are interfaces injected via the constructor (`IPuzzleGenerator`, `ITimerService`, `ISettingsService`) so view models are testable with fakes. Register new services in `App.xaml.cs`.
 - Use `[ObservableProperty]` / `[RelayCommand]` source generators; follow the existing `_camelCase` field style.
 - Drag-and-drop: `DragSource` puts the element's DataContext on the drag; `DropTarget` invokes a command with `DropRequest(source, target)`. Game rules for moves live in `MainViewModel.CanMoveTile` / `MoveTile`.
 - New view-model behavior gets a test in `tests/CrossMath.App.Tests/MainViewModelTests.cs` (uses a fixed 2-blank puzzle).

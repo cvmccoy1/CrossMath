@@ -9,6 +9,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IPuzzleGenerator _generator;
     private readonly ITimerService _timer;
+    private readonly ISettingsService _settings;
     private Puzzle? _puzzle;
     private object? _selection;
     private IReadOnlyList<TileViewModel> _allTiles = [];
@@ -18,11 +19,17 @@ public partial class MainViewModel : ObservableObject
 
     private sealed record CellSnapshot(CellViewModel Cell, TileViewModel? Tile, bool IsLocked);
 
-    public MainViewModel(IPuzzleGenerator generator, ITimerService timer)
+    public MainViewModel(IPuzzleGenerator generator, ITimerService timer, ISettingsService settings)
     {
         _generator = generator;
         _timer = timer;
+        _settings = settings;
         _timer.Tick += (_, _) => Elapsed += TimeSpan.FromSeconds(1);
+
+        // Set the fields, not the properties: the property setters would start a game and re-save.
+        var saved = settings.Load();
+        _selectedDifficulty = saved.Difficulty;
+        _windowPlacement = saved.Window;
     }
 
     public IReadOnlyList<Difficulty> Difficulties { get; } = Enum.GetValues<Difficulty>();
@@ -40,7 +47,11 @@ public partial class MainViewModel : ObservableObject
     private int _columns;
 
     [ObservableProperty]
-    private Difficulty _selectedDifficulty = Difficulty.Easy;
+    private Difficulty _selectedDifficulty;
+
+    /// <summary>The main window's size and position, restored at startup and saved when it closes.</summary>
+    [ObservableProperty]
+    private WindowPlacement? _windowPlacement;
 
     [ObservableProperty]
     private TimeSpan _elapsed;
@@ -68,7 +79,15 @@ public partial class MainViewModel : ObservableObject
 
     private IEnumerable<CellViewModel> BlankCells => Cells.Where(c => c.IsBlank);
 
-    partial void OnSelectedDifficultyChanged(Difficulty value) => NewGameCommand.Execute(null);
+    partial void OnSelectedDifficultyChanged(Difficulty value)
+    {
+        SaveSettings();
+        NewGameCommand.Execute(null);
+    }
+
+    partial void OnWindowPlacementChanged(WindowPlacement? value) => SaveSettings();
+
+    private void SaveSettings() => _settings.Save(new AppSettings(SelectedDifficulty, WindowPlacement));
 
     [RelayCommand]
     private async Task NewGameAsync()
@@ -131,14 +150,14 @@ public partial class MainViewModel : ObservableObject
             Pool.Add(tile);
         ClearHistory();
 
-        StartClock();
-        StatusMessage = "Drag each tile onto an empty square so every equation is true.";
+        ResetClock();
+        StatusMessage = $"{Instructions} The clock starts with your first move.";
     }
 
     [RelayCommand(CanExecute = nameof(CanMoveTile))]
     private void MoveTile(DropRequest request)
     {
-        SaveForUndo();
+        BeforeBoardChange();
         switch (request.Source, request.Target)
         {
             case (TileViewModel tile, CellViewModel cell):
@@ -251,7 +270,7 @@ public partial class MainViewModel : ObservableObject
                      ?? open.FirstOrDefault(c => c.Tile is null);
         if (target is null) return;
 
-        SaveForUndo();
+        BeforeBoardChange();
         int needed = SolutionAt(target);
         var tile = Pool.Tiles.FirstOrDefault(t => t.Value == needed);
         if (tile is not null)
@@ -288,7 +307,7 @@ public partial class MainViewModel : ObservableObject
         }
         Select(null);
         ClearHistory();
-        StartClock();
+        ResetClock();
         StatusMessage = "Board cleared.";
     }
 
@@ -320,11 +339,18 @@ public partial class MainViewModel : ObservableObject
 
     private bool CanUndo => IsPlaying && _history.Count > 0;
 
-    private void SaveForUndo()
+    /// <summary>Called before every move or hint: records the board for Undo and starts the clock on the first one.</summary>
+    private void BeforeBoardChange()
     {
         _history.Push(BlankCells.Select(c => new CellSnapshot(c, c.Tile, c.IsLocked)).ToArray());
         UndoCommand.NotifyCanExecuteChanged();
+        if (_timer.IsRunning) return;
+
+        _timer.Start();
+        StatusMessage = Instructions;
     }
+
+    private const string Instructions = "Drag each tile onto an empty square so every equation is true.";
 
     private void ClearHistory()
     {
@@ -332,12 +358,13 @@ public partial class MainViewModel : ObservableObject
         UndoCommand.NotifyCanExecuteChanged();
     }
 
-    private void StartClock()
+    /// <summary>Zeroes the clock and leaves it stopped until the first move.</summary>
+    private void ResetClock()
     {
         IsSolved = false;
         HintsUsed = 0;
         Elapsed = TimeSpan.Zero;
-        _timer.Start();
+        _timer.Stop();
     }
 
     private void AfterBoardChanged()

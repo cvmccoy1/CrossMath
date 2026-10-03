@@ -43,10 +43,17 @@ public class MainViewModelTests
         public void RaiseTick() => Tick?.Invoke(this, EventArgs.Empty);
     }
 
+    private sealed class FakeSettings(AppSettings initial) : ISettingsService
+    {
+        public List<AppSettings> Saved { get; } = [];
+        public AppSettings Load() => initial;
+        public void Save(AppSettings settings) => Saved.Add(settings);
+    }
+
     private static async Task<(MainViewModel Vm, FakeTimer Timer)> StartGameAsync()
     {
         var timer = new FakeTimer();
-        var vm = new MainViewModel(new FakeGenerator(), timer);
+        var vm = new MainViewModel(new FakeGenerator(), timer, new FakeSettings(new AppSettings()));
         await vm.NewGameCommand.ExecuteAsync(null);
         return (vm, timer);
     }
@@ -59,7 +66,7 @@ public class MainViewModelTests
         vm.MoveTileCommand.Execute(new DropRequest(source, target));
 
     [Fact]
-    public async Task NewGame_BuildsBoardPoolAndStartsTimer()
+    public async Task NewGame_BuildsBoardAndPoolWithClockStopped()
     {
         var (vm, timer) = await StartGameAsync();
 
@@ -69,6 +76,29 @@ public class MainViewModelTests
         Assert.Equal("9", Cell(vm, new Pos(0, 0)).DisplayText);
         Assert.Equal("+", Cell(vm, new Pos(0, 1)).DisplayText);
         Assert.Equal(CellKind.Blocked, Cell(vm, new Pos(1, 1)).Kind);
+        Assert.False(timer.IsRunning);
+        Assert.Equal(TimeSpan.Zero, vm.Elapsed);
+    }
+
+    [Fact]
+    public async Task Clock_StartsWithFirstMove()
+    {
+        var (vm, timer) = await StartGameAsync();
+        vm.SelectTileCommand.Execute(Tile(vm, 3)); // selecting isn't a move
+        Assert.False(timer.IsRunning);
+
+        Assert.Contains("clock starts", vm.StatusMessage);
+
+        Move(vm, Tile(vm, 4), Cell(vm, B));
+        Assert.True(timer.IsRunning);
+        Assert.DoesNotContain("clock starts", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task Clock_StartsWithFirstHint()
+    {
+        var (vm, timer) = await StartGameAsync();
+        vm.HintCommand.Execute(null);
         Assert.True(timer.IsRunning);
     }
 
@@ -228,7 +258,7 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public async Task Reset_ReturnsAllTilesAndRestartsClock()
+    public async Task Reset_ReturnsAllTilesAndZeroesClockUntilNextMove()
     {
         var (vm, timer) = await StartGameAsync();
         vm.HintCommand.Execute(null);
@@ -242,6 +272,9 @@ public class MainViewModelTests
         Assert.False(vm.IsSolved);
         Assert.Equal(0, vm.HintsUsed);
         Assert.Equal(TimeSpan.Zero, vm.Elapsed);
+        Assert.False(timer.IsRunning);
+
+        Move(vm, Tile(vm, 3), Cell(vm, B));
         Assert.True(timer.IsRunning);
     }
 
@@ -300,5 +333,32 @@ public class MainViewModelTests
 
         vm.ResetCommand.Execute(null);
         Assert.False(vm.UndoCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void Startup_UsesSavedSettingsWithoutResaving()
+    {
+        var placement = new WindowPlacement(10, 20, 900, 700, IsMaximized: true);
+        var settings = new FakeSettings(new AppSettings(Difficulty.Hard, placement));
+
+        var vm = new MainViewModel(new FakeGenerator(), new FakeTimer(), settings);
+
+        Assert.Equal(Difficulty.Hard, vm.SelectedDifficulty);
+        Assert.Equal(placement, vm.WindowPlacement);
+        Assert.Empty(settings.Saved);
+    }
+
+    [Fact]
+    public void ChangingDifficultyOrWindowPlacement_SavesSettings()
+    {
+        var settings = new FakeSettings(new AppSettings());
+        var vm = new MainViewModel(new FakeGenerator(), new FakeTimer(), settings);
+
+        vm.SelectedDifficulty = Difficulty.Medium;
+        Assert.Equal(new AppSettings(Difficulty.Medium), settings.Saved[^1]);
+
+        var placement = new WindowPlacement(5, 5, 800, 600, IsMaximized: false);
+        vm.WindowPlacement = placement;
+        Assert.Equal(new AppSettings(Difficulty.Medium, placement), settings.Saved[^1]);
     }
 }
