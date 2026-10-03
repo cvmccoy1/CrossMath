@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # The project folder "CrossMath.App" matches the macOS "*.app" rule above (case-insensitive on Windows)
 !src/CrossMath.App/
+
+# Publish profiles are build settings here, not web-deploy credentials.
+!src/CrossMath.App/Properties/PublishProfiles/*.pubxml

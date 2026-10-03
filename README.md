@@ -38,6 +38,14 @@ Requires Windows and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 dotnet run --project src/CrossMath.App
 ```
 
+Build a standalone, single-file `CrossMath.App.exe` (about 62 MB; runs on 64-bit Windows without .NET installed):
+
+```sh
+dotnet publish src/CrossMath.App -p:PublishProfile=SingleFile
+```
+
+It lands in `src/CrossMath.App/bin/publish/`. In Visual Studio, the same profile appears under **Publish** for the CrossMath.App project.
+
 Run the tests:
 
 ```sh
