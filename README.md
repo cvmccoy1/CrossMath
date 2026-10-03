@@ -33,7 +33,11 @@ Every row and column in the grid is an equation. Drag the number tiles into the 
 | Equation shapes | `a ○ b = c` | also `a ○ b ○ c = d` | also `a ○ b ○ c = d` |
 | Squares hidden | ~40% | ~55% | ~65% |
 
-## Running it
+## Download
+
+Get **CrossMath.exe** from the [latest release](https://github.com/cvmccoy1/CrossMath/releases/latest) and run it. It's a single file for 64-bit Windows and doesn't need .NET installed. The exe isn't code-signed, so Windows SmartScreen may warn the first time: choose **More info** → **Run anyway**.
+
+## Building from source
 
 Requires Windows and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 

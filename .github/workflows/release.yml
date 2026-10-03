@@ -1,0 +1,42 @@
+# Pushing a version tag (e.g. v1.2.0) builds, tests and publishes the single-file exe,
+# then creates a GitHub Release for the tag with CrossMath.exe attached.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create the release and upload the exe
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test
+
+      - name: Publish single-file exe
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          dotnet publish src/CrossMath.App -p:PublishProfile=SingleFile -p:Version="$version"
+          cp src/CrossMath.App/bin/publish/CrossMath.App.exe CrossMath.exe
+
+      - name: Create release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" CrossMath.exe \
+            --title "CrossMath $GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "Download **CrossMath.exe** and run it. It needs 64-bit Windows; .NET doesn't need to be installed.
+
+          The exe isn't code-signed, so Windows SmartScreen may warn on first run: choose **More info** → **Run anyway**."
