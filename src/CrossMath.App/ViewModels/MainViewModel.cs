@@ -11,6 +11,12 @@ public partial class MainViewModel : ObservableObject
     private readonly ITimerService _timer;
     private Puzzle? _puzzle;
     private object? _selection;
+    private IReadOnlyList<TileViewModel> _allTiles = [];
+
+    /// <summary>Board states before each move or hint, newest on top; Undo pops them back to the start.</summary>
+    private readonly Stack<CellSnapshot[]> _history = new();
+
+    private sealed record CellSnapshot(CellViewModel Cell, TileViewModel? Tile, bool IsLocked);
 
     public MainViewModel(IPuzzleGenerator generator, ITimerService timer)
     {
@@ -47,11 +53,11 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIdle))]
-    [NotifyCanExecuteChangedFor(nameof(CheckCommand), nameof(HintCommand), nameof(ResetCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckCommand), nameof(HintCommand), nameof(ResetCommand), nameof(UndoCommand))]
     private bool _isGenerating;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CheckCommand), nameof(HintCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckCommand), nameof(HintCommand), nameof(UndoCommand))]
     private bool _isSolved;
 
     public bool IsIdle => !IsGenerating;
@@ -119,9 +125,11 @@ public partial class MainViewModel : ObservableObject
         Columns = puzzle.Cols;
         Cells = cells;
 
+        _allTiles = puzzle.TilePool.Select(value => new TileViewModel(value)).ToArray();
         Pool.Clear();
-        foreach (int value in puzzle.TilePool)
-            Pool.Add(new TileViewModel(value));
+        foreach (var tile in _allTiles)
+            Pool.Add(tile);
+        ClearHistory();
 
         StartClock();
         StatusMessage = "Drag each tile onto an empty square so every equation is true.";
@@ -130,6 +138,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanMoveTile))]
     private void MoveTile(DropRequest request)
     {
+        SaveForUndo();
         switch (request.Source, request.Target)
         {
             case (TileViewModel tile, CellViewModel cell):
@@ -242,6 +251,7 @@ public partial class MainViewModel : ObservableObject
                      ?? open.FirstOrDefault(c => c.Tile is null);
         if (target is null) return;
 
+        SaveForUndo();
         int needed = SolutionAt(target);
         var tile = Pool.Tiles.FirstOrDefault(t => t.Value == needed);
         if (tile is not null)
@@ -277,8 +287,49 @@ public partial class MainViewModel : ObservableObject
             cell.State = CellState.Normal;
         }
         Select(null);
+        ClearHistory();
         StartClock();
         StatusMessage = "Board cleared.";
+    }
+
+    /// <summary>
+    /// Reverts the last move or hint, back as far as the start of the game (or the last Reset).
+    /// Undoing a hint removes its tile but still counts the hint.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        var snapshot = _history.Pop();
+        UndoCommand.NotifyCanExecuteChanged();
+
+        foreach (var saved in snapshot)
+        {
+            saved.Cell.Tile = saved.Tile;
+            saved.Cell.IsLocked = saved.IsLocked;
+            saved.Cell.State = saved.IsLocked ? CellState.Hinted : CellState.Normal;
+        }
+
+        var placed = snapshot.Select(saved => saved.Tile).OfType<TileViewModel>().ToHashSet();
+        Pool.Clear();
+        foreach (var tile in _allTiles.Where(t => !placed.Contains(t)))
+            Pool.Add(tile);
+
+        AfterBoardChanged();
+        StatusMessage = _history.Count == 0 ? "Undone. Back to the start." : "Undone.";
+    }
+
+    private bool CanUndo => IsPlaying && _history.Count > 0;
+
+    private void SaveForUndo()
+    {
+        _history.Push(BlankCells.Select(c => new CellSnapshot(c, c.Tile, c.IsLocked)).ToArray());
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    private void ClearHistory()
+    {
+        _history.Clear();
+        UndoCommand.NotifyCanExecuteChanged();
     }
 
     private void StartClock()

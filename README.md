@@ -12,6 +12,7 @@ Every row and column in the grid is an equation. Drag the number tiles into the 
 - Or **click** a tile, then click a square. **Right-click** a placed tile to send it back to the pool.
 - **Check** colors the squares of every completed equation green (correct) or red (wrong).
 - **Hint** places one correct tile and locks it.
+- **Undo** (or **Ctrl+Z**) takes back the last move or hint, one step at a time, back to the start of the game. An undone hint still counts toward your hint total.
 - **Reset** clears the board. **New Game** or a difficulty change generates a fresh puzzle.
 
 ### Rules

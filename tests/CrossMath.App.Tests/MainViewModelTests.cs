@@ -244,4 +244,61 @@ public class MainViewModelTests
         Assert.Equal(TimeSpan.Zero, vm.Elapsed);
         Assert.True(timer.IsRunning);
     }
+
+    [Fact]
+    public async Task Undo_StepsBackThroughMovesToTheStart()
+    {
+        var (vm, _) = await StartGameAsync();
+        Assert.False(vm.UndoCommand.CanExecute(null));
+
+        Move(vm, Tile(vm, 4), Cell(vm, B));
+        Move(vm, Cell(vm, B), Cell(vm, D));
+        Move(vm, Tile(vm, 3), Cell(vm, B));
+        Assert.Empty(vm.Pool.Tiles);
+
+        vm.UndoCommand.Execute(null);
+        Assert.Null(Cell(vm, B).Tile);
+        Assert.Equal(4, Cell(vm, D).Value);
+        Assert.Equal([3], vm.Pool.Tiles.Select(t => t.Value));
+
+        vm.UndoCommand.Execute(null);
+        Assert.Equal(4, Cell(vm, B).Value);
+        Assert.Null(Cell(vm, D).Tile);
+
+        vm.UndoCommand.Execute(null);
+        Assert.All(vm.Cells.Where(c => c.IsBlank), c => Assert.Null(c.Tile));
+        Assert.Equal([3, 4], vm.Pool.Tiles.Select(t => t.Value));
+        Assert.False(vm.UndoCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Undo_RemovesHintedTileButKeepsHintCount()
+    {
+        var (vm, _) = await StartGameAsync();
+        vm.HintCommand.Execute(null);
+
+        vm.UndoCommand.Execute(null);
+
+        Assert.All(vm.Cells.Where(c => c.IsBlank), c =>
+        {
+            Assert.Null(c.Tile);
+            Assert.False(c.IsLocked);
+            Assert.Equal(CellState.Normal, c.State);
+        });
+        Assert.Equal(2, vm.Pool.Tiles.Count);
+        Assert.Equal(1, vm.HintsUsed);
+    }
+
+    [Fact]
+    public async Task Undo_IsUnavailableOnceSolvedAndAfterReset()
+    {
+        var (vm, _) = await StartGameAsync();
+        Move(vm, Tile(vm, 3), Cell(vm, B));
+        Move(vm, Tile(vm, 4), Cell(vm, D));
+        Assert.True(vm.IsSolved);
+        Assert.False(vm.UndoCommand.CanExecute(null));
+
+        vm.ResetCommand.Execute(null);
+        Assert.False(vm.UndoCommand.CanExecute(null));
+    }
 }

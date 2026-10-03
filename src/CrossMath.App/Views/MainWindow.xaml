@@ -12,6 +12,10 @@
         WindowStartupLocation="CenterScreen"
         Background="#F4F1EA" FontFamily="Segoe UI">
 
+    <Window.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoCommand}" />
+    </Window.InputBindings>
+
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <conv:TimeSpanToStringConverter x:Key="TimeText" />
@@ -141,6 +145,7 @@
             <Button Content="New Game" Command="{Binding NewGameCommand}" />
             <Button Content="Check" Command="{Binding CheckCommand}" />
             <Button Content="Hint" Command="{Binding HintCommand}" />
+            <Button Content="Undo" Command="{Binding UndoCommand}" ToolTip="Undo the last move or hint (Ctrl+Z)" />
             <Button Content="Reset" Command="{Binding ResetCommand}" />
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="⏱ " FontSize="18" />
