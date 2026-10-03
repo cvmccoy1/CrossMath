@@ -344,10 +344,7 @@ public partial class MainViewModel : ObservableObject
     {
         _history.Push(BlankCells.Select(c => new CellSnapshot(c, c.Tile, c.IsLocked)).ToArray());
         UndoCommand.NotifyCanExecuteChanged();
-        if (_timer.IsRunning) return;
-
-        _timer.Start();
-        StatusMessage = Instructions;
+        if (!_timer.IsRunning) _timer.Start();
     }
 
     private const string Instructions = "Drag each tile onto an empty square so every equation is true.";
@@ -369,9 +366,11 @@ public partial class MainViewModel : ObservableObject
 
     private void AfterBoardChanged()
     {
+        // A move makes earlier Check results stale: clear their colors and message.
         Select(null);
         foreach (var cell in BlankCells.Where(c => !c.IsLocked))
             cell.State = CellState.Normal;
+        StatusMessage = Instructions;
 
         bool solved = BlankCells.All(c => c.Tile is not null)
             && _puzzle!.Equations.All(eq => Evaluator.IsSatisfied(eq, _puzzle.Operators, p => CellAt(p).Value));

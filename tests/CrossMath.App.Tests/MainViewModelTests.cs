@@ -199,14 +199,16 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public async Task Check_StatesClearOnNextMove()
+    public async Task Check_ColorsAndMessageClearOnNextMove()
     {
         var (vm, _) = await StartGameAsync();
         Move(vm, Tile(vm, 4), Cell(vm, B));
         vm.CheckCommand.Execute(null);
+        Assert.Contains("don't add up", vm.StatusMessage);
 
         Move(vm, Cell(vm, B), vm.Pool);
         Assert.Equal(CellState.Normal, Cell(vm, B).State);
+        Assert.DoesNotContain("don't add up", vm.StatusMessage);
     }
 
     [Fact]

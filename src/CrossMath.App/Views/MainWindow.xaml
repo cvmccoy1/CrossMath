@@ -20,8 +20,9 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <conv:TimeSpanToStringConverter x:Key="TimeText" />
-        <conv:CellStateToBrushConverter x:Key="StateBrush"
-                                        Normal="White" Correct="#CDEFD0" Wrong="#F7C9C9" Hinted="#D3E4FA" />
+        <!-- Fill for a tile placed on the board: tray colors normally, tinted by Check results or a hint. -->
+        <conv:CellStateToBrushConverter x:Key="PlacedTileBrush"
+                                        Normal="#FFF6DA" Correct="#CDEFD0" Wrong="#F7C9C9" Hinted="#D3E4FA" />
 
         <SolidColorBrush x:Key="Ink" Color="#2E2A24" />
         <SolidColorBrush x:Key="PlayerInk" Color="#1F5FB4" />
@@ -44,14 +45,21 @@
             <Setter Property="CornerRadius" Value="6" />
         </Style>
 
+        <!-- White backing so the number notches into the corner of a placed tile instead of overlapping it. -->
         <Style x:Key="ClueNumberText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="Margin" Value="3,1,0,0" />
+            <Setter Property="Padding" Value="3,1,2,1" />
+            <Setter Property="Background" Value="White" />
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="VerticalAlignment" Value="Top" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
             <Setter Property="IsHitTestVisible" Value="False" />
             <Setter Property="Text" Value="{Binding ClueNumber}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ClueNumber}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="SquareText" TargetType="TextBlock">
@@ -88,8 +96,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="BlankCell" DataType="{x:Type vm:CellViewModel}">
-            <Border x:Name="Box" Style="{StaticResource Square}" BorderBrush="{StaticResource SelectEdge}"
-                    Background="{Binding State, Converter={StaticResource StateBrush}}"
+            <Border x:Name="Box" Style="{StaticResource Square}"
                     Cursor="Hand"
                     b:DragSource.CanDrag="{Binding CanDrag}"
                     b:DragSource.ClickCommand="{Binding DataContext.CellClickedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -97,18 +104,27 @@
                     b:DropTarget.Command="{Binding DataContext.MoveTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                     ToolTip="Drop a tile here. Right-click to send it back.">
                 <Grid>
-                    <TextBlock x:Name="Value" Style="{StaticResource SquareText}" Text="{Binding DisplayText}"
-                               FontWeight="SemiBold" Foreground="{StaticResource PlayerInk}" />
+                    <!-- A placed tile looks the same as in the tray, so movable numbers stand apart from the
+                         fixed, printed ones. -->
+                    <Border x:Name="PlacedTile" Margin="4" CornerRadius="6" BorderThickness="2"
+                            BorderBrush="{StaticResource TileEdge}"
+                            Background="{Binding State, Converter={StaticResource PlacedTileBrush}}"
+                            Visibility="{Binding HasTile, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock x:Name="Value" Style="{StaticResource SquareText}" Text="{Binding DisplayText}"
+                                   FontSize="20" FontWeight="SemiBold" />
+                    </Border>
                     <TextBlock Style="{StaticResource ClueNumberText}" />
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter TargetName="Box" Property="BorderThickness" Value="3" />
+                    <Setter TargetName="PlacedTile" Property="BorderBrush" Value="{StaticResource SelectEdge}" />
+                    <Setter TargetName="PlacedTile" Property="BorderThickness" Value="3" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsLocked}" Value="True">
                     <Setter TargetName="Box" Property="Cursor" Value="Arrow" />
-                    <Setter TargetName="Value" Property="FontStyle" Value="Italic" />
+                    <Setter TargetName="PlacedTile" Property="BorderBrush" Value="{StaticResource PlayerInk}" />
+                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource PlayerInk}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
