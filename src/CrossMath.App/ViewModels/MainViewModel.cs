@@ -91,6 +91,9 @@ public partial class MainViewModel : ObservableObject
         _puzzle = puzzle;
         _selection = null;
 
+        var starts = puzzle.Equations.Select(eq => eq.Start).ToHashSet();
+        int clueNumber = 0;
+
         var cells = new List<CellViewModel>(puzzle.Rows * puzzle.Cols);
         for (int r = 0; r < puzzle.Rows; r++)
         {
@@ -98,14 +101,17 @@ public partial class MainViewModel : ObservableObject
             {
                 var pos = new Pos(r, c);
                 var kind = puzzle.KindAt(pos);
-                cells.Add(kind switch
+                var cell = kind switch
                 {
                     CellKind.Number when puzzle.Blanks.Contains(pos) => new CellViewModel(pos, kind, isBlank: true),
                     CellKind.Number => new CellViewModel(pos, kind, false, puzzle.Solution[pos].ToString(), puzzle.Solution[pos]),
                     CellKind.Operator => new CellViewModel(pos, kind, false, puzzle.Operators[pos].ToSymbol()),
                     CellKind.Equals => new CellViewModel(pos, kind, false, "="),
                     _ => new CellViewModel(pos, kind, false),
-                });
+                };
+                // Crossword-style numbering: equation starts, in reading order.
+                if (starts.Contains(pos)) cell.ClueNumber = ++clueNumber;
+                cells.Add(cell);
             }
         }
 

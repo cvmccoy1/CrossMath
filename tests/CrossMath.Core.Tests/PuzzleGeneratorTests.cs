@@ -37,6 +37,27 @@ public class PuzzleGeneratorTests
         Assert.NotEmpty(puzzle.Blanks);
         Assert.Equal(puzzle.Blanks.Count, puzzle.TilePool.Count);
         Assert.Equal(1, Solver.CountSolutions(puzzle));
+        AssertNoTrivialSteps(puzzle);
+    }
+
+    // No "× 1", "÷ 1", or "−"/"÷" steps giving 0 or 1 (x − x, x − (x − 1), x ÷ x).
+    private static void AssertNoTrivialSteps(Puzzle puzzle)
+    {
+        foreach (var eq in puzzle.Equations)
+        {
+            long acc = puzzle.Solution[eq.Operands[0]];
+            for (int i = 0; i < eq.OperatorCells.Count; i++)
+            {
+                var op = puzzle.Operators[eq.OperatorCells[i]];
+                int right = puzzle.Solution[eq.Operands[i + 1]];
+                if (op is Op.Mul or Op.Div) Assert.NotEqual(1, right);
+                if (op == Op.Mul) Assert.NotEqual(1, acc);
+
+                acc = Evaluator.Apply(acc, op, right)!.Value;
+                if (op is Op.Sub or Op.Div)
+                    Assert.True(acc >= 2, $"{op} step gives {acc}");
+            }
+        }
     }
 
     [Fact]

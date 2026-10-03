@@ -73,6 +73,16 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task NewGame_NumbersEquationStartsLikeACrossword()
+    {
+        var (vm, _) = await StartGameAsync();
+
+        // Across and down both start at (0,0), so it is the only numbered cell.
+        Assert.Equal(1, Cell(vm, new Pos(0, 0)).ClueNumber);
+        Assert.Single(vm.Cells, c => c.ClueNumber is not null);
+    }
+
+    [Fact]
     public async Task TimerTicks_AdvanceElapsed()
     {
         var (vm, timer) = await StartGameAsync();

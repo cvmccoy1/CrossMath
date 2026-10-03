@@ -48,8 +48,8 @@ dotnet test
 
 Puzzles are generated on the fly in four steps (see [`src/CrossMath.Core`](src/CrossMath.Core)):
 
-1. **Layout** — equations are placed one at a time, each crossing an existing equation at a number square, with crossword rules so equations never touch side by side or end to end.
-2. **Fill** — random operators are chosen, then a randomized backtracking search finds numbers that satisfy every equation.
+1. **Layout** — equations are placed one at a time, each crossing an existing equation at a number square, with crossword rules so equations never touch side by side or end to end. Each step samples a few placements and keeps the most compact, so the grid interlocks like a crossword.
+2. **Fill** — random operators are chosen, then a randomized backtracking search finds numbers that satisfy every equation. It rejects trivial-looking steps: `× 1`, `÷ 1`, and any `−` or `÷` that gives 0 or 1 (`x − x`, `x − (x − 1)`, `x ÷ x`).
 3. **Hide** — number squares are hidden one by one. A solver counts how many ways the hidden tiles could be placed, and a square stays hidden only if the answer is still unique.
 4. The hidden numbers become the tile pool.
 

@@ -8,7 +8,7 @@ public sealed record Layout(int Rows, int Cols, IReadOnlyList<Equation> Equation
 /// </summary>
 public static class LayoutGenerator
 {
-    private const int AttachAttempts = 400;
+    private const int AttachAttempts = 150;
 
     public static Layout? TryGenerate(DifficultySettings settings, int equationCount, Random rng)
     {
@@ -30,20 +30,39 @@ public static class LayoutGenerator
             var anchors = numberOrientations.Where(kv => kv.Value.Count == 1).ToList();
             if (anchors.Count == 0) return null;
 
-            var (anchor, orientations) = anchors[rng.Next(anchors.Count)];
-            var orientation = orientations.Contains(Orientation.Horizontal) ? Orientation.Vertical : Orientation.Horizontal;
-            int count = Pick(settings.OperandCounts, rng);
-            int length = count * 2 + 1;
-            int index = rng.Next((length + 1) / 2) * 2; // number cells sit at even indices
-            var start = orientation == Orientation.Horizontal ? anchor.Offset(0, -index) : anchor.Offset(-index, 0);
-            var candidate = new Equation(start, orientation, count);
+            // Sample a few placements and keep the most compact valid one, so the grid fills in
+            // like a crossword instead of sprawling. Sampling only a few keeps shapes varied.
+            Equation? best = null;
+            int bestArea = int.MaxValue;
+            for (int sample = 0; sample < settings.LayoutCandidates; sample++)
+            {
+                var (anchor, orientations) = anchors[rng.Next(anchors.Count)];
+                var orientation = orientations.Contains(Orientation.Horizontal) ? Orientation.Vertical : Orientation.Horizontal;
+                int count = Pick(settings.OperandCounts, rng);
+                int length = count * 2 + 1;
+                int index = rng.Next((length + 1) / 2) * 2; // number cells sit at even indices
+                var start = orientation == Orientation.Horizontal ? anchor.Offset(0, -index) : anchor.Offset(-index, 0);
+                var candidate = new Equation(start, orientation, count);
 
-            if (CanPlace(candidate)) Place(candidate);
+                if (!CanPlace(candidate)) continue;
+                int area = BoundingArea(candidate);
+                if (area < bestArea) (best, bestArea) = (candidate, area);
+            }
+
+            if (best is not null) Place(best);
         }
 
         return equations.Count == equationCount ? Crop(equations) : null;
 
         bool InBounds(Pos p) => p.Row >= 0 && p.Col >= 0 && p.Row < size && p.Col < size;
+
+        int BoundingArea(Equation extra)
+        {
+            var cells = occupied.Keys.Concat(extra.Cells);
+            int rows = cells.Max(p => p.Row) - cells.Min(p => p.Row) + 1;
+            int cols = cells.Max(p => p.Col) - cells.Min(p => p.Col) + 1;
+            return rows * cols;
+        }
 
         bool CanPlace(Equation eq)
         {

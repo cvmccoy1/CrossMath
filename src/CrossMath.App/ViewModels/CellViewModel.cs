@@ -26,6 +26,9 @@ public partial class CellViewModel : ObservableObject
     /// <summary>Fixed text for given numbers, operators and "=".</summary>
     public string Text { get; }
 
+    /// <summary>Crossword-style number shown in the corner of a cell where an equation starts.</summary>
+    public int? ClueNumber { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayText), nameof(HasTile), nameof(CanDrag), nameof(Value))]
     private TileViewModel? _tile;

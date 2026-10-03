@@ -24,11 +24,29 @@
         <SolidColorBrush x:Key="TileEdge" Color="#C9A44C" />
         <SolidColorBrush x:Key="SelectEdge" Color="#E07B18" />
 
+        <!-- Board squares butt together on an ink background, so the gaps read as grid lines. -->
         <Style x:Key="Square" TargetType="Border">
+            <Setter Property="Width" Value="54" />
+            <Setter Property="Height" Value="54" />
+            <Setter Property="Margin" Value="1" />
+            <Setter Property="Background" Value="White" />
+        </Style>
+
+        <Style x:Key="PoolSquare" TargetType="Border">
             <Setter Property="Width" Value="52" />
             <Setter Property="Height" Value="52" />
-            <Setter Property="Margin" Value="2" />
+            <Setter Property="Margin" Value="4" />
             <Setter Property="CornerRadius" Value="6" />
+        </Style>
+
+        <Style x:Key="ClueNumberText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="3,1,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Text" Value="{Binding ClueNumber}" />
         </Style>
 
         <Style x:Key="SquareText" TargetType="TextBlock">
@@ -45,7 +63,8 @@
         </Style>
 
         <DataTemplate x:Key="BlockedCell">
-            <Border Style="{StaticResource Square}" />
+            <!-- Transparent: the board's ink background shows through, without anti-aliased seams. -->
+            <Border Style="{StaticResource Square}" Background="Transparent" />
         </DataTemplate>
 
         <DataTemplate x:Key="SymbolCell" DataType="{x:Type vm:CellViewModel}">
@@ -55,13 +74,16 @@
         </DataTemplate>
 
         <DataTemplate x:Key="GivenCell" DataType="{x:Type vm:CellViewModel}">
-            <Border Style="{StaticResource Square}" Background="#E6DFCF" BorderBrush="#B9AE98" BorderThickness="1">
-                <TextBlock Style="{StaticResource SquareText}" Text="{Binding Text}" FontWeight="Bold" />
+            <Border Style="{StaticResource Square}">
+                <Grid>
+                    <TextBlock Style="{StaticResource SquareText}" Text="{Binding Text}" FontWeight="Bold" />
+                    <TextBlock Style="{StaticResource ClueNumberText}" />
+                </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="BlankCell" DataType="{x:Type vm:CellViewModel}">
-            <Border x:Name="Box" Style="{StaticResource Square}" BorderThickness="2" BorderBrush="#9A8F7A"
+            <Border x:Name="Box" Style="{StaticResource Square}" BorderBrush="{StaticResource SelectEdge}"
                     Background="{Binding State, Converter={StaticResource StateBrush}}"
                     Cursor="Hand"
                     b:DragSource.CanDrag="{Binding CanDrag}"
@@ -69,12 +91,14 @@
                     b:DragSource.RightClickCommand="{Binding DataContext.ReturnTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                     b:DropTarget.Command="{Binding DataContext.MoveTileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                     ToolTip="Drop a tile here. Right-click to send it back.">
-                <TextBlock x:Name="Value" Style="{StaticResource SquareText}" Text="{Binding DisplayText}"
-                           FontWeight="SemiBold" Foreground="{StaticResource PlayerInk}" />
+                <Grid>
+                    <TextBlock x:Name="Value" Style="{StaticResource SquareText}" Text="{Binding DisplayText}"
+                               FontWeight="SemiBold" Foreground="{StaticResource PlayerInk}" />
+                    <TextBlock Style="{StaticResource ClueNumberText}" />
+                </Grid>
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource SelectEdge}" />
                     <Setter TargetName="Box" Property="BorderThickness" Value="3" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsLocked}" Value="True">
@@ -91,7 +115,7 @@
                                    BlankTemplate="{StaticResource BlankCell}" />
 
         <DataTemplate x:Key="PoolTile" DataType="{x:Type vm:TileViewModel}">
-            <Border x:Name="Tile" Style="{StaticResource Square}" Margin="4"
+            <Border x:Name="Tile" Style="{StaticResource PoolSquare}"
                     Background="{StaticResource TileFill}" BorderBrush="{StaticResource TileEdge}" BorderThickness="2"
                     Cursor="Hand"
                     b:DragSource.CanDrag="True"
@@ -146,13 +170,15 @@
         <!-- Board -->
         <Grid>
             <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
-                <ItemsControl ItemsSource="{Binding Cells}" ItemTemplateSelector="{StaticResource CellSelector}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Rows="{Binding Rows}" Columns="{Binding Columns}" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <Border Background="{StaticResource Ink}" Padding="3">
+                    <ItemsControl ItemsSource="{Binding Cells}" ItemTemplateSelector="{StaticResource CellSelector}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="{Binding Rows}" Columns="{Binding Columns}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Border>
             </Viewbox>
 
             <Border Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"

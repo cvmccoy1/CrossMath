@@ -71,15 +71,20 @@ public static class Filler
             return false;
         }
 
-        // Avoid trivial-looking steps like "× 1" or "÷ 1".
+        // Avoid trivial-looking steps: "× 1", "÷ 1", and "−" or "÷" steps that give 0 or 1
+        // (x − x, x − (x − 1), x ÷ x).
         bool LooksGood(Equation eq)
         {
+            long? acc = ValueAt(eq.Operands[0]);
             for (int i = 0; i < eq.OperatorCells.Count; i++)
             {
                 var op = operators[eq.OperatorCells[i]];
-                if (op is not (Op.Mul or Op.Div)) continue;
-                if (ValueAt(eq.Operands[i + 1]) == 1) return false;
-                if (i == 0 && op == Op.Mul && ValueAt(eq.Operands[0]) == 1) return false;
+                int? right = ValueAt(eq.Operands[i + 1]);
+                if (op is Op.Mul or Op.Div && right == 1) return false;
+                if (op == Op.Mul && acc == 1) return false;
+
+                acc = acc is long a && right is int b ? Evaluator.Apply(a, op, b) : null;
+                if (op is Op.Sub or Op.Div && acc <= 1) return false;
             }
             return true;
         }
